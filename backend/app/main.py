@@ -31,6 +31,12 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database initialized successfully.")
+    try:
+        from app.db.seed import seed_database
+        await seed_database()
+        logger.info("Database auto-seeded successfully.")
+    except Exception as e:
+        logger.warning(f"Auto-seed check/execution skipped or notice: {e}")
     yield
     logger.info("Shutting down ApprovalTrack Backend.")
 
