@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ApprovalTrack - Role-Based Regulatory Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 900: '#312e81' },
+            aicte: { primary: '#1e3a8a', accent: '#f59e0b', green: '#10b981', red: '#ef4444' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+    .toast-anim { animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes toastIn { from { transform: translateY(-15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Toast Container -->
+  <div id="toastBox" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Global Header with Strict Role Switcher -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-700 to-blue-800 flex items-center justify-center text-white font-black text-lg shadow-md shadow-indigo-300/40">
+          AT
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-black tracking-tight text-slate-900">Approval<span class="text-indigo-600">Track</span></h1>
+            <span id="roleBadge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+              Super Admin
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 hidden sm:block">AICTE Role-Based Regulatory Compliance System</p>
+        </div>
+      </div>
+
+      <!-- Persona Switcher Bar -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-1 shadow-inner">
+          <span class="text-[11px] text-slate-400 font-semibold pl-2 hidden md:inline">Simulate Role:</span>
+          <select id="roleSelect" onchange="changeRole(this.value)" class="text-xs font-bold bg-white border border-slate-200 text-slate-800 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer">
+            <option value="SUPER_ADMIN">👑 Super Admin</option>
+            <option value="AICTE_OFFICER">🔍 AICTE Scrutiny Officer</option>
+            <option value="COLLEGE_ADMIN">🏛️ College Administrator</option>
+            <option value="EVC_MEMBER">📋 EVC Inspection Committee</option>
+            <option value="AUDITOR">🛡️ Regulatory Auditor</option>
+          </select>
+        </div>
+
+        <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs" id="userAvatar">
+            RV
+          </div>
+          <div class="hidden lg:block text-left">
+            <div class="text-xs font-bold text-slate-900" id="userName">Dr. Rajesh Verma</div>
+            <div class="text-[10px] text-slate-500" id="userRoleDetail">Ministry of Education / AICTE HQ</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Role Sub-Bar & Context Banner -->
+  <div id="roleContextBar" class="bg-indigo-900 text-white border-b border-indigo-950 py-3 px-4 sm:px-8 text-xs transition-colors duration-300">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <i id="contextIcon" class="fa-solid fa-shield-halved text-indigo-300"></i>
+        <span class="font-bold text-indigo-100" id="contextTitle">Access Scope: Full AICTE Nationwide System</span>
+        <span class="text-indigo-300">&bull;</span>
+        <span class="text-indigo-200" id="contextConstraints">All permissions granted (Users, System, Audit, Approvals)</span>
+      </div>
+      <div id="roleActionsArea" class="flex items-center gap-2 flex-wrap">
+        <!-- Injected dynamically per role -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Role-Specific Navigation Tabs -->
+  <div class="bg-white border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav id="roleNavTabs" class="flex gap-4 sm:gap-6 overflow-x-auto text-xs font-bold text-slate-500">
+        <!-- Dynamically populated tabs -->
+      </nav>
+    </div>
+  </div>
+
+  <!-- Main Dynamic View Area -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+    <div id="pageContainer">
+      <!-- Injected per active role and tab -->
+    </div>
+  </main>
+
+  <!-- Global Shared Modals -->
+
+  <!-- Modal 1: EOA Approval Letter Viewer -->
+  <div id="eoaModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-8 border border-slate-200 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-950 text-white flex items-center justify-center font-black text-sm">AICTE</div>
+          <div>
+            <h4 class="font-black text-slate-900 text-sm">ALL INDIA COUNCIL FOR TECHNICAL EDUCATION</h4>
+            <p class="text-[10px] text-slate-500">Nelson Mandela Marg, Vasant Kunj, New Delhi-110070</p>
+          </div>
+        </div>
+        <button onclick="closeModal('eoaModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="border p-6 rounded-xl bg-slate-50/50 font-serif text-xs text-slate-800 space-y-3 leading-relaxed">
+        <div class="text-right text-[11px] font-sans text-slate-500">
+          Letter No: <strong id="eoaLetterNo" class="text-slate-900">AICTE/AB/2026/EOA/0942</strong><br/>
+          Date of Issue: <span>29-Oct-2026</span>
+        </div>
+
+        <p class="font-sans font-bold">To,<br/>The Principal / Director,<br/><span id="eoaCollegeName" class="text-indigo-900 font-black">Delhi Technical Institute</span>,<br/>Sector 14, Dwarka, New Delhi</p>
+
+        <p class="font-sans font-bold text-center underline text-sm py-1.5 text-indigo-950">
+          SUB: EXTENSION OF APPROVAL (EOA) GRANTED FOR ACADEMIC YEAR 2026-27
+        </p>
+
+        <p>Sir/Madam,</p>
+        <p>In accordance with statutory AICTE regulatory norms and automated validation reports, approval is conveyed for the following technical courses:</p>
+
+        <table class="w-full text-[11px] font-sans border-collapse border border-slate-300 text-left my-2">
+          <thead class="bg-slate-200 font-bold">
+            <tr>
+              <th class="border p-1.5">Program</th>
+              <th class="border p-1.5">Approved Course</th>
+              <th class="border p-1.5">Sanctioned Intake</th>
+              <th class="border p-1.5">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border p-1.5">ENGINEERING</td>
+              <td class="border p-1.5">Computer Science & Engineering</td>
+              <td class="border p-1.5 font-bold">180</td>
+              <td class="border p-1.5 text-emerald-700 font-bold">VALID</td>
+            </tr>
+            <tr>
+              <td class="border p-1.5">ENGINEERING</td>
+              <td class="border p-1.5">Electronics & Communication</td>
+              <td class="border p-1.5 font-bold">120</td>
+              <td class="border p-1.5 text-emerald-700 font-bold">VALID</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pt-4 flex justify-between items-end font-sans">
+          <div class="text-[10px] text-slate-500">
+            <i class="fa-solid fa-qrcode text-3xl text-slate-900"></i><br/>
+            Digitally Signed &amp; Timestamped
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-slate-900">Member Secretary</div>
+            <div class="text-[10px] text-slate-500">AICTE Statutory Committee</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-end gap-2">
+        <button onclick="closeModal('eoaModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">Close</button>
+        <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow">
+          <i class="fa-solid fa-print mr-1"></i> Print / Download
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: OCR Inspection Modal -->
+  <div id="inspectModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base" id="insModalTitle">Optical AI Document Scrutiny</h3>
+          <p class="text-xs text-slate-500" id="insModalSubtitle">Automated PyMuPDF / Tesseract extraction analysis</p>
+        </div>
+        <button onclick="closeModal('inspectModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <div id="insNoticeBox" class="p-3.5 rounded-xl border">
+          <div class="font-bold flex items-center gap-2 text-sm" id="insNoticeHead"></div>
+          <div class="mt-1 text-[11px]" id="insNoticeBody"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-[11px]">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-slate-400 uppercase text-[9px] font-bold block">Document Type</span>
+            <span class="font-bold text-slate-800" id="insDocType">Fire NOC Certificate</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="text-slate-400 uppercase text-[9px] font-bold block">Extraction Confidence</span>
+            <span class="font-bold text-emerald-600" id="insConfidence">99.4% (Passed AI Scrutiny)</span>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-900 text-slate-200 rounded-xl font-mono text-[11px] leading-relaxed max-h-40 overflow-y-auto">
+          <div class="text-indigo-400 font-bold mb-1"># OCR Extracted Raw Text Stream:</div>
+          <pre id="insRawText" class="whitespace-pre-wrap"></pre>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2 border-t pt-4" id="insModalButtons">
+        <!-- Rendered based on role permissions -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: EVC Inspection Report Signoff -->
+  <div id="evcModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-slate-200 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base">EVC Physical Inspection Report</h3>
+          <p class="text-xs text-slate-500">Expert Visit Committee (EVC) On-Site Signoff</p>
+        </div>
+        <button onclick="closeModal('evcModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <form onsubmit="submitEvcReport(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Inspected Institution</label>
+          <input type="text" id="evcCollegeName" readonly class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2.5 font-bold text-slate-700">
+        </div>
+
+        <div class="space-y-2">
+          <div class="font-bold text-slate-800">Inspection Checklist Verification</div>
+          <label class="flex items-center gap-2 p-2.5 rounded-lg border bg-slate-50 cursor-pointer">
+            <input type="checkbox" required checked class="rounded text-indigo-600 focus:ring-indigo-500">
+            <span>Physical Land Boundaries &amp; Perimeter Verified (min 2.5 acres)</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-lg border bg-slate-50 cursor-pointer">
+            <input type="checkbox" required checked class="rounded text-indigo-600 focus:ring-indigo-500">
+            <span>Laboratories &amp; Equipment as per AICTE Cadre Schedule</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-lg border bg-slate-50 cursor-pointer">
+            <input type="checkbox" required checked class="rounded text-indigo-600 focus:ring-indigo-500">
+            <span>Emergency Fire Exits &amp; Water Sprinkler Hydrants Active</span>
+          </label>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">EVC Recommendation</label>
+          <select id="evcRecommendation" class="w-full border border-slate-200 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-indigo-500">
+            <option value="RECOMMENDED">✅ Recommended for Unconditional Approval</option>
+            <option value="DEFICIENCY">⚠️ Minor Deficiencies Observed (Requires 15-day Rectification)</option>
+            <option value="REJECTED">❌ Critical Infrastructure Deficiency (Reject Intake)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Chairperson Observations &amp; Remarks</label>
+          <textarea rows="3" required placeholder="Enter physical inspection observations..." class="w-full border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500">Campus inspection completed. All computer laboratories equipped with licensed software and adequate faculty seating.</textarea>
+        </div>
+
+        <div class="pt-4 border-t flex justify-end gap-2">
+          <button type="button" onclick="closeModal('evcModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow">
+            Sign &amp; Submit EVC Report
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Role-Based State & Engine Script -->
+  <script>
+    // System Data Stores
+    const state = {
+      role: 'SUPER_ADMIN',
+      activeTab: 'overview',
+      selectedAppId: null,
+      
+      // All Institutions / Applications
+      applications: [
+        { 
+          id: "APP-2026-NRO-0042", 
+          college: "Delhi Technical Institute", 
+          code: "1-3329104", 
+          region: "Northern (Kanpur)", 
+          state: "Delhi",
+          type: "Extension of Approval", 
+          status: "DEFICIENCY", 
+          ocrStatus: "FLAGGED",
+          deficiencyReason: "Fire Safety NOC expired on 15-Dec-2025. Mandatory for renewal.",
+          confidence: "99.2%",
+          docType: "Fire Safety Certificate",
+          rawText: "GOVERNMENT OF NCT OF DELHI - FIRE SERVICES HEADQUARTERS\nCertificate No: DFS/HQ/2024/7741\nIssued: Delhi Technical Institute, Dwarka\nExpiry Date: 15-Dec-2025\nStatus: EXPIRED. Immediate renewal required.",
+          assignedToMe: true
+        },
+        { 
+          id: "APP-2026-SRO-0189", 
+          college: "National Academy of Engineering", 
+          code: "1-4902118", 
+          region: "Southern (Chennai)", 
+          state: "Tamil Nadu",
+          type: "New Course (AI & DS)", 
+          status: "SCRUTINY", 
+          ocrStatus: "PASSED",
+          deficiencyReason: "None. All cadred norms verified.",
+          confidence: "98.7%",
+          docType: "Cadre Faculty List & Land Lease",
+          rawText: "STATE REGISTRAR OF DEEDS - CHENNAI\nTenure: 35 Years Registered Lease Deed\nStatus: ACTIVE_VALID\nCadre Faculty Ratio: 1:14.2 (Norm: 1:15 satisfied)",
+          assignedToMe: true
+        },
+        { 
+          id: "APP-2026-SWRO-0071", 
+          college: "Bengaluru School of Applied Tech", 
+          code: "1-2291044", 
+          region: "South-Western (Bengaluru)", 
+          state: "Karnataka",
+          type: "Extension of Approval", 
+          status: "APPROVED", 
+          ocrStatus: "PASSED",
+          deficiencyReason: "None. EOA issued.",
+          confidence: "99.8%",
+          docType: "Mandatory Annual Disclosure",
+          rawText: "AICTE CENTRAL REPOSITORY VERIFICATION\nStatus: COMPLIANT\nAll approvals cleared for AY 2026-27.",
+          assignedToMe: false
+        },
+        { 
+          id: "APP-2026-WRO-0210", 
+          college: "Mumbai Institute of Technology", 
+          code: "1-1827490", 
+          region: "Western (Mumbai)", 
+          state: "Maharashtra",
+          type: "Intake Variation (+60 seats)", 
+          status: "EVC_SCHEDULED", 
+          ocrStatus: "PASSED",
+          deficiencyReason: "Pending physical inspection by EVC Committee.",
+          confidence: "97.9%",
+          docType: "Architectural Building Plan",
+          rawText: "MUNICIPAL CORPORATION OF GREATER MUMBAI\nBuilding Carpet Area: 16,400 sq.m\nStatus: APPROVED_FOR_EXPANSION",
+          assignedToMe: true
+        }
+      ],
+
+      // Audit Chain (Tamper-Evident SHA-256 Chain)
+      auditLogs: [
+        { id: "LOG-8841", action: "APPROVAL_ISSUED", actor: "Super Admin", entity: "APP-2026-SWRO-0071", prevHash: "b82a09c4...11", hash: "4f901d8a...92", time: "12 mins ago" },
+        { id: "LOG-8840", action: "EVC_VISIT_SCHEDULED", actor: "AICTE Scrutiny Officer", entity: "APP-2026-WRO-0210", prevHash: "1e779a02...44", hash: "b82a09c4...11", time: "45 mins ago" },
+        { id: "LOG-8839", action: "DEFICIENCY_DETECTED", actor: "AI OCR Engine", entity: "APP-2026-NRO-0042", prevHash: "9d3301a2...77", hash: "1e779a02...44", time: "2 hours ago" },
+        { id: "LOG-8838", action: "APPLICATION_SUBMITTED", actor: "College Admin (Delhi Tech)", entity: "APP-2026-NRO-0042", prevHash: "GENESIS_ROOT", hash: "9d3301a2...77", time: "4 hours ago" }
+      ]
+    };
+
+    // Role Configuration Specifications & Constraints
+    const ROLES = {
+      SUPER_ADMIN: {
+        badge: "Super Admin",
+        badgeColor: "bg-purple-100 text-purple-900",
+        barColor: "bg-slate-900",
+        name: "Dr. Rajesh Verma",
+        roleDesc: "AICTE Directorate General & Ministry Liaison",
+        scope: "Full AICTE Central System Scope",
+        constraints: "Unrestricted master permissions: audit oversight, role assignment, and final override authority.",
+        icon: "fa-shield-halved",
+        tabs: [
+          { id: "overview", label: "National Overview", icon: "fa-chart-pie" },
+          { id: "all_apps", label: "Master Application Ledger", icon: "fa-folder-tree" },
+          { id: "ocr_hub", label: "AI OCR Engine", icon: "fa-brain" },
+          { id: "audit_ledger", label: "Cryptographic Audit Log", icon: "fa-link" }
+        ],
+        actions: `
+          <button onclick="exportCSV()" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold border border-white/20">
+            <i class="fa-solid fa-download mr-1"></i> Export National Data
+          </button>
+        `
+      },
+      AICTE_OFFICER: {
+        badge: "AICTE Scrutiny Officer",
+        badgeColor: "bg-blue-100 text-blue-900",
+        barColor: "bg-blue-950",
+        name: "Sunita Sharma",
+        roleDesc: "Senior Scrutiny Officer (Northern Regional Office - NRO)",
+        scope: "Northern Regional Office (NRO - Kanpur & Delhi)",
+        constraints: "Restricted to regional scrutiny: can triage, issue deficiency notices, and schedule EVC inspections. Cannot alter audit hash records.",
+        icon: "fa-magnifying-glass",
+        tabs: [
+          { id: "regional_queue", label: "Regional Scrutiny Queue", icon: "fa-inbox" },
+          { id: "deficiencies", label: "Deficiency Triage", icon: "fa-triangle-exclamation" },
+          { id: "ocr_hub", label: "OCR Document Scrutiny", icon: "fa-file-shield" }
+        ],
+        actions: `
+          <button onclick="showToast('Refreshed Northern Region queue', 'info')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold">
+            <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Queue
+          </button>
+        `
+      },
+      COLLEGE_ADMIN: {
+        badge: "College Administrator",
+        badgeColor: "bg-emerald-100 text-emerald-900",
+        barColor: "bg-emerald-950",
+        name: "Prof. K. Ramanathan",
+        roleDesc: "Principal & Approval Coordinator &bull; Delhi Technical Institute",
+        scope: "Isolated to Institution: Delhi Technical Institute (ID: 1-3329104)",
+        constraints: "STRICT ISOLATION: Can only view and edit this college's documents. Absolutely NO access to other institutions or internal scrutiny consoles.",
+        icon: "fa-building-columns",
+        tabs: [
+          { id: "my_college", label: "My Institute Status", icon: "fa-landmark" },
+          { id: "upload_docs", label: "Upload Compliance Documents", icon: "fa-cloud-arrow-up" },
+          { id: "rectification", label: "Deficiency Notices & Cure", icon: "fa-circle-exclamation" },
+          { id: "my_eoa", label: "Approved EOA Letters", icon: "fa-certificate" }
+        ],
+        actions: `
+          <button onclick="showUploadHelp()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">
+            <i class="fa-solid fa-file-arrow-up mr-1"></i> Submit 2026-27 EOA Application
+          </button>
+        `
+      },
+      EVC_MEMBER: {
+        badge: "EVC Inspection Member",
+        badgeColor: "bg-amber-100 text-amber-900",
+        barColor: "bg-amber-950",
+        name: "Dr. P. Sen",
+        roleDesc: "Chairperson, Expert Visit Committee (Western Zone)",
+        scope: "Assigned On-Site Inspections: Mumbai Institute of Technology",
+        constraints: "Inspection access only: conducts physical checklist verification and submits advisory recommendation reports. Cannot grant direct final EOA.",
+        icon: "fa-clipboard-check",
+        tabs: [
+          { id: "evc_schedule", label: "Assigned Inspection Schedule", icon: "fa-calendar-days" },
+          { id: "evc_checklist", label: "On-Site Physical Checklist", icon: "fa-list-check" }
+        ],
+        actions: `
+          <button onclick="openEvcModal('Mumbai Institute of Technology')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold">
+            <i class="fa-solid fa-pen-to-square mr-1"></i> Fill Inspection Report
+          </button>
+        `
+      },
+      AUDITOR: {
+        badge: "Regulatory Auditor",
+        badgeColor: "bg-slate-200 text-slate-800",
+        barColor: "bg-slate-900",
+        name: "CMA Arvind Joshi",
+        roleDesc: "Chief Quality & Governance Auditor (Third-Party Oversight)",
+        scope: "Read-Only Cryptographic Audit & Compliance Ledger",
+        constraints: "Strictly Read-Only access: verifies SHA-256 hash chains, detects stage transition anomalies, and inspects approval transparency.",
+        icon: "fa-scale-balanced",
+        tabs: [
+          { id: "audit_ledger", label: "Cryptographic Hash Chain", icon: "fa-link" },
+          { id: "anomaly_report", label: "Discrepancy Analytics", icon: "fa-triangle-exclamation" }
+        ],
+        actions: `
+          <button onclick="verifyChainIntegrity()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold">
+            <i class="fa-solid fa-fingerprint mr-1"></i> Verify Blockchain-Hash Integrity
+          </button>
+        `
+      }
+    };
+
+    // Toast Engine
+    function showToast(msg, type = "success") {
+      const box = document.getElementById('toastBox');
+      const el = document.createElement('div');
+      const bg = type === 'success' ? 'bg-emerald-600' : (type === 'error' ? 'bg-rose-600' : 'bg-slate-900');
+      const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-xmark' : 'fa-bell');
+      
+      el.className = `${bg} text-white px-4 py-3 rounded-xl shadow-xl text-xs font-bold flex items-center gap-2.5 toast-anim pointer-events-auto`;
+      el.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${msg}</span>`;
+      box.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-10px)';
+        el.style.transition = 'all 0.25s ease';
+        setTimeout(() => el.remove(), 250);
+      }, 3000);
+    }
+
+    // Role Switcher Implementation
+    function changeRole(roleKey) {
+      state.role = roleKey;
+      const conf = ROLES[roleKey];
+      
+      // Update Top Nav Info
+      document.getElementById('roleBadge').className = `text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${conf.badgeColor}`;
+      document.getElementById('roleBadge').innerText = conf.badge;
+      document.getElementById('userName').innerText = conf.name;
+      document.getElementById('userRoleDetail').innerText = conf.roleDesc;
+      document.getElementById('userAvatar').innerText = conf.name.split(' ').map(n=>n[0]).join('').slice(0,2);
+
+      // Update Context Sub-Bar
+      const bar = document.getElementById('roleContextBar');
+      bar.className = `${conf.barColor} text-white border-b border-indigo-950 py-3 px-4 sm:px-8 text-xs transition-colors duration-300`;
+      document.getElementById('contextIcon').className = `fa-solid ${conf.icon} text-indigo-300`;
+      document.getElementById('contextTitle').innerText = `Access Scope: ${conf.scope}`;
+      document.getElementById('contextConstraints').innerText = conf.constraints;
+      document.getElementById('roleActionsArea').innerHTML = conf.actions;
+
+      // Update Tabs for this Role
+      state.activeTab = conf.tabs[0].id;
+      renderTabs();
+      renderPage();
+
+      showToast(`Switched to ${conf.badge} Mode`, "info");
+    }
+
+    function renderTabs() {
+      const nav = document.getElementById('roleNavTabs');
+      const conf = ROLES[state.role];
+      nav.innerHTML = conf.tabs.map(t => `
+        <button onclick="setTab('${t.id}')" class="py-3 px-1 border-b-2 flex items-center gap-2 transition ${state.activeTab === t.id ? 'border-indigo-600 text-indigo-700 font-black' : 'border-transparent hover:border-slate-300 hover:text-slate-800'}">
+          <i class="fa-solid ${t.icon}"></i>
+          <span>${t.label}</span>
+        </button>
+      `).join('');
+    }
+
+    function setTab(tabId) {
+      state.activeTab = tabId;
+      renderTabs();
+      renderPage();
+    }
+
+    // Dynamic Page Render Engine (Constrained per Role)
+    function renderPage() {
+      const container = document.getElementById('pageContainer');
+      const r = state.role;
+      const tab = state.activeTab;
+
+      // ==========================================================
+      // VIEW 1: SUPER ADMIN
+      // ==========================================================
+      if (r === 'SUPER_ADMIN') {
+        if (tab === 'overview') {
+          container.innerHTML = `
+            <div class="space-y-6">
+              <!-- KPI Row -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">Total Technical Colleges <i class="fa-solid fa-school text-indigo-600"></i></div>
+                  <div class="text-2xl font-black text-slate-900 mt-2">1,482</div>
+                  <div class="text-[11px] text-emerald-600 font-bold mt-1"><i class="fa-solid fa-arrow-up"></i> 100% Onboarded</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">Under Active Scrutiny <i class="fa-solid fa-clock text-amber-600"></i></div>
+                  <div class="text-2xl font-black text-slate-900 mt-2">38</div>
+                  <div class="text-[11px] text-amber-600 font-bold mt-1">Pending Regional Clearance</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">AI Detected Deficiencies <i class="fa-solid fa-triangle-exclamation text-rose-600"></i></div>
+                  <div class="text-2xl font-black text-slate-900 mt-2">14</div>
+                  <div class="text-[11px] text-rose-600 font-bold mt-1">Expired Fire NOC / Land Lease</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div class="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">EOA Approvals Issued <i class="fa-solid fa-certificate text-emerald-600"></i></div>
+                  <div class="text-2xl font-black text-slate-900 mt-2">1,430</div>
+                  <div class="text-[11px] text-emerald-600 font-bold mt-1">Cryptographically Signed</div>
+                </div>
+              </div>
+
+              <!-- Master Applications Table -->
+              ${renderApplicationsTable(state.applications, true)}
+            </div>
+          `;
+        } else if (tab === 'all_apps') {
+          container.innerHTML = renderApplicationsTable(state.applications, true);
+        } else if (tab === 'ocr_hub') {
+          container.innerHTML = renderOcrHub();
+        } else if (tab === 'audit_ledger') {
+          container.innerHTML = renderAuditLedger();
+        }
+      }
+
+      // ==========================================================
+      // VIEW 2: AICTE SCRUTINY OFFICER (Regional Constraint)
+      // ==========================================================
+      else if (r === 'AICTE_OFFICER') {
+        const regionalApps = state.applications.filter(a => a.region.includes("Northern") || a.region.includes("NRO"));
+        if (tab === 'regional_queue') {
+          container.innerHTML = `
+            <div class="space-y-4">
+              <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl text-blue-900 text-xs flex items-center justify-between">
+                <div>
+                  <span class="font-black text-sm">Northern Regional Office (NRO) Scrutiny Desk</span>
+                  <p class="text-[11px] text-blue-700 mt-0.5">Showing colleges assigned to Kanpur/Delhi regional jurisdiction.</p>
+                </div>
+                <span class="px-2.5 py-1 bg-blue-200 text-blue-900 font-bold rounded-lg text-xs">${regionalApps.length} Assigned</span>
+              </div>
+              ${renderApplicationsTable(regionalApps, false, true)}
+            </div>
+          `;
+        } else if (tab === 'deficiencies') {
+          const defApps = regionalApps.filter(a => a.status === 'DEFICIENCY');
+          container.innerHTML = `
+            <div class="space-y-4">
+              <div class="bg-rose-50 border border-rose-200 p-4 rounded-xl text-rose-900 text-xs">
+                <span class="font-black text-sm">Flagged Deficiency Resolutions</span>
+                <p class="text-[11px] text-rose-700 mt-0.5">These institutions triggered regulatory violations through the automated AI document scanner.</p>
+              </div>
+              ${renderApplicationsTable(defApps, false, true)}
+            </div>
+          `;
+        } else if (tab === 'ocr_hub') {
+          container.innerHTML = renderOcrHub();
+        }
+      }
+
+      // ==========================================================
+      // VIEW 3: COLLEGE ADMINISTRATOR (Strict College Isolation)
+      // ==========================================================
+      else if (r === 'COLLEGE_ADMIN') {
+        const myApp = state.applications.find(a => a.college === "Delhi Technical Institute");
+        if (tab === 'my_college') {
+          container.innerHTML = `
+            <div class="space-y-6">
+              <!-- College Identity Header -->
+              <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                  <div class="w-14 h-14 rounded-2xl bg-indigo-900 text-white flex items-center justify-center font-black text-xl shadow-md">DTI</div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h2 class="text-lg font-black text-slate-900">Delhi Technical Institute</h2>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border">AICTE Permanent ID: 1-3329104</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">Sector 14, Dwarka, New Delhi &bull; Affiliated to GGSIPU</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Deficiency Flagged
+                  </span>
+                </div>
+              </div>
+
+              <!-- Status Alert Box -->
+              <div class="p-5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-900 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="font-black text-sm flex items-center gap-2"><i class="fa-solid fa-clock text-rose-600"></i> Urgent AICTE Action Required (7-Day Notice)</span>
+                  <span class="text-[11px] font-bold text-rose-700">Deadline: 05-Nov-2026</span>
+                </div>
+                <p class="mt-2 text-[12px] leading-relaxed">Your submitted <strong>Fire Safety NOC</strong> was scanned by AICTE OCR and flagged as <strong>EXPIRED on 15-Dec-2025</strong>. To proceed with the Extension of Approval (EOA) for 2026-27, upload an updated valid Fire Certificate below.</p>
+                <div class="mt-4 flex gap-2">
+                  <button onclick="setTab('upload_docs')" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-sm">
+                    Upload Rectified Certificate Now &rarr;
+                  </button>
+                </div>
+              </div>
+
+              <!-- My Submissions -->
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-slate-900 text-sm mb-3">Institutional Application Record</h3>
+                <div class="border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-slate-50">
+                  <div>
+                    <span class="font-bold text-slate-900">${myApp.type}</span>
+                    <div class="text-[11px] text-slate-500 mt-0.5">Application No: ${myApp.id} &bull; AY 2026-27</div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Deficiency Cure Stage</span>
+                    <button onclick="openInspectModal('${myApp.id}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg">
+                      View AI Scrutiny
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (tab === 'upload_docs') {
+          container.innerHTML = renderCollegeUploadZone();
+        } else if (tab === 'rectification') {
+          container.innerHTML = `
+            <div class="space-y-4">
+              <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                <h3 class="font-bold text-slate-900 text-sm mb-1">Official Deficiencies Communicated</h3>
+                <p class="text-xs text-slate-500 mb-4">Statutory notices issued by AICTE Scrutiny Officers</p>
+
+                <div class="p-4 border border-rose-200 bg-rose-50/50 rounded-xl space-y-2 text-xs">
+                  <div class="flex items-center justify-between font-bold text-rose-900">
+                    <span>Item 1: FIRE_SAFETY_NOC</span>
+                    <span class="text-[10px] uppercase font-bold bg-rose-200 px-2 py-0.5 rounded">Action Mandatory</span>
+                  </div>
+                  <p class="text-[11px] text-slate-700">"Extracted certificate indicates expiry on 15-Dec-2025. Council regulations prohibit operations without unexpired state fire approvals."</p>
+                  <div class="pt-2 border-t border-rose-200 flex justify-between items-center">
+                    <span class="text-[10px] text-slate-500">Issued by: Northern Regional Office</span>
+                    <button onclick="setTab('upload_docs')" class="px-3 py-1 bg-rose-600 text-white font-bold rounded text-[11px]">Upload Rectification</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (tab === 'my_eoa') {
+          container.innerHTML = `
+            <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-3">
+              <div class="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xl mx-auto border border-amber-200">
+                <i class="fa-solid fa-hourglass-half"></i>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">EOA Approval Letter Pending Clearance</h3>
+              <p class="text-xs text-slate-500 max-w-md mx-auto">Your official AICTE approval letter for Academic Year 2026-27 will be cryptographically issued and downloadable here as soon as the Fire NOC deficiency is resolved.</p>
+              <button onclick="setTab('upload_docs')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow">Resolve Deficiency Now</button>
+            </div>
+          `;
+        }
+      }
+
+      // ==========================================================
+      // VIEW 4: EVC INSPECTION MEMBER (Inspection Constraint)
+      // ==========================================================
+      else if (r === 'EVC_MEMBER') {
+        const evcApp = state.applications.find(a => a.status === 'EVC_SCHEDULED');
+        if (tab === 'evc_schedule') {
+          container.innerHTML = `
+            <div class="space-y-4">
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full uppercase">Scheduled Physical Visit</span>
+                  <h3 class="text-base font-black text-slate-900 mt-1">${evcApp.college}</h3>
+                  <p class="text-xs text-slate-500">Scheduled Date: <strong>03-Nov-2026</strong> &bull; Region: ${evcApp.region}</p>
+                </div>
+                <div class="flex gap-2">
+                  <button onclick="openEvcModal('${evcApp.college}')" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg shadow">
+                    <i class="fa-solid fa-clipboard-check mr-1"></i> Fill On-Site Checklist
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (tab === 'evc_checklist') {
+          container.innerHTML = renderEvcChecklistPage(evcApp.college);
+        }
+      }
+
+      // ==========================================================
+      // VIEW 5: REGULATORY AUDITOR (Read-Only Governance)
+      // ==========================================================
+      else if (r === 'AUDITOR') {
+        if (tab === 'audit_ledger') {
+          container.innerHTML = renderAuditLedger();
+        } else if (tab === 'anomaly_report') {
+          container.innerHTML = `
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
+              <div class="flex justify-between items-center">
+                <h3 class="font-bold text-slate-900 text-sm">Automated Governance Anomaly Audit</h3>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Zero Tamper Violations</span>
+              </div>
+              <p class="text-xs text-slate-500">Every application transition has been verified against parent SHA-256 genesis blocks.</p>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Verified Transition Hashes</div>
+                  <div class="text-xl font-black text-slate-900 mt-1">100%</div>
+                  <div class="text-[11px] text-emerald-600 font-bold mt-0.5">4 of 4 Blocks Valid</div>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Deficiency Compliance Rate</div>
+                  <div class="text-xl font-black text-slate-900 mt-1">96.5%</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5">High Regulatory Adherence</div>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Average Scrutiny Latency</div>
+                  <div class="text-xl font-black text-slate-900 mt-1">1.8 Days</div>
+                  <div class="text-[11px] text-indigo-600 font-bold mt-0.5">Well under 7-day limit</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+    }
+
+    // Helper: Applications Table Renderer (Customized with Role Permissions)
+    function renderApplicationsTable(appList, isSuperAdmin = false, isOfficer = false) {
+      if (appList.length === 0) {
+        return `<div class="p-8 text-center bg-white rounded-2xl border text-xs text-slate-400">No applications match the current role scope.</div>`;
+      }
+
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-100 bg-slate-50/70 flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Institutional Regulatory Applications</h3>
+            <span class="text-xs font-semibold text-slate-500">${appList.length} applications active</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider border-b border-slate-100">
+                <tr>
+                  <th class="py-3 px-4">College & Code</th>
+                  <th class="py-3 px-4">Region</th>
+                  <th class="py-3 px-4">AI OCR Status</th>
+                  <th class="py-3 px-4">Workflow State</th>
+                  <th class="py-3 px-4 text-right">Permitted Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium">
+                ${appList.map(app => `
+                  <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-3.5 px-4">
+                      <div class="font-bold text-slate-900">${app.college}</div>
+                      <div class="text-[10px] text-slate-400 font-mono">${app.id} &bull; ID: ${app.code}</div>
+                    </td>
+                    <td class="py-3.5 px-4 font-semibold text-slate-700">${app.region}</td>
+                    <td class="py-3.5 px-4">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${app.ocrStatus === 'FLAGGED' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
+                        ${app.ocrStatus === 'FLAGGED' ? 'Deficiency Detected' : 'OCR Verified'}
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-4">
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        app.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                        (app.status === 'DEFICIENCY' ? 'bg-rose-100 text-rose-800' :
+                        (app.status === 'EVC_SCHEDULED' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'))
+                      }">
+                        ${app.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-4 text-right space-x-1">
+                      <button onclick="openInspectModal('${app.id}')" class="px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded">
+                        Inspect
+                      </button>
+                      
+                      ${(isSuperAdmin || isOfficer) && app.status !== 'APPROVED' ? `
+                        <button onclick="quickApprove('${app.id}')" class="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded shadow-sm">
+                          Approve
+                        </button>
+                      ` : ''}
+
+                      ${app.status === 'APPROVED' ? `
+                        <button onclick="openEoaModal('${app.college}', '${app.id}')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded">
+                          <i class="fa-solid fa-file-pdf text-rose-600 mr-1"></i> EOA PDF
+                        </button>
+                      ` : ''}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Helper: AI OCR Scrutiny Hub
+    function renderOcrHub() {
+      return `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <h3 class="font-bold text-slate-900 text-sm">Optical AI Document Text Extractor</h3>
+                <p class="text-xs text-slate-500">Autonomous OCR rule parsing powered by PyMuPDF and Vision Models</p>
+              </div>
+              <span class="text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700 border px-2 py-0.5 rounded">Tesseract Core</span>
+            </div>
+
+            <!-- Pre-Loaded Sample Triggers -->
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button onclick="simulateOCR('FIRE_NOC')" class="px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 font-bold text-xs rounded-lg border">
+                📄 Fire Clearance NOC
+              </button>
+              <button onclick="simulateOCR('LAND_LEASE')" class="px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 font-bold text-xs rounded-lg border">
+                📄 30-Year Land Deed
+              </button>
+              <button onclick="simulateOCR('CADRE')" class="px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 font-bold text-xs rounded-lg border">
+                📄 Faculty Cadre Payroll
+              </button>
+            </div>
+
+            <div id="ocrOutputBox" class="border rounded-xl p-4 bg-slate-900 text-slate-200 font-mono text-xs max-h-56 overflow-y-auto">
+              <div class="text-indigo-400 font-bold mb-1">// Real-Time OCR Text Stream:</div>
+              <p class="text-slate-400">Click a certificate above to extract optical data and test automated rule verification.</p>
+            </div>
+          </div>
+
+          <!-- Norms Checklist -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-3">
+            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">AICTE Regulatory Bounds</h4>
+            <div class="text-xs space-y-3">
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span class="font-bold text-slate-800 block">Fire NOC Validity</span>
+                <span class="text-[11px] text-slate-500">Must be unexpired for full upcoming academic year.</span>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span class="font-bold text-slate-800 block">Land Lease Tenure</span>
+                <span class="text-[11px] text-slate-500">Minimum 30 years registered tenure required.</span>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span class="font-bold text-slate-800 block">Cadre Ratio</span>
+                <span class="text-[11px] text-slate-500">Minimum 1:15 faculty-to-student cadre compliance.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Helper: College Document Upload Zone
+    function renderCollegeUploadZone() {
+      return `
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-4 max-w-2xl mx-auto">
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Upload Compliance Certificate (AY 2026-27)</h3>
+            <p class="text-xs text-slate-500">Upload your renewed Fire Safety NOC or Land Deed to resolve the active deficiency flag.</p>
+          </div>
+
+          <div class="border-2 border-dashed border-indigo-200 hover:border-indigo-500 rounded-2xl p-8 text-center bg-indigo-50/20 cursor-pointer transition" onclick="simulateCollegeUpload()">
+            <i class="fa-solid fa-cloud-arrow-up text-3xl text-indigo-600 mb-2"></i>
+            <div class="font-bold text-slate-800 text-sm">Click to Select &amp; Upload Renewed Certificate</div>
+            <p class="text-[11px] text-slate-400 mt-1">Accepts PDF, JPG, PNG &bull; Automated OCR extraction will run immediately</p>
+          </div>
+
+          <div id="uploadFeedback" class="hidden p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs">
+            <div class="font-bold flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> Upload &amp; AI Extraction Succeeded!</div>
+            <p class="text-[11px] mt-1 text-slate-600">Extracted: <strong>Valid Fire Clearance through Nov 2027</strong>. Your deficiency has been marked as <strong>RECTIFIED</strong> and forwarded to the Scrutiny Officer.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    // Helper: Cryptographic Audit Ledger
+    function renderAuditLedger() {
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 border-b bg-slate-50/70 flex justify-between items-center">
+            <div>
+              <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Cryptographic Audit Ledger (SHA-256 Chain)</h3>
+              <p class="text-[11px] text-slate-500">Immutable, tamper-evident regulatory trail synchronized with backend</p>
+            </div>
+            <button onclick="verifyChainIntegrity()" class="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-lg hover:bg-indigo-100">
+              <i class="fa-solid fa-check-double mr-1"></i> Verify Hashes
+            </button>
+          </div>
+          <div class="p-4 space-y-3">
+            ${state.auditLogs.map(log => `
+              <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div>
+                  <div class="font-bold text-slate-900 flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-100 text-indigo-700 font-bold">${log.action}</span>
+                    <span>${log.entity}</span>
+                  </div>
+                  <div class="text-[10px] font-mono text-slate-500 mt-1">
+                    Hash: <strong class="text-slate-800">${log.hash}</strong> &bull; Prev: ${log.prevHash}
+                  </div>
+                </div>
+                <div class="text-right text-[11px] text-slate-500">
+                  <div class="font-semibold text-slate-700">${log.actor}</div>
+                  <div class="text-[10px] text-slate-400">${log.time}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // Helper: EVC On-Site Checklist View
+    function renderEvcChecklistPage(collegeName) {
+      return `
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-4 max-w-3xl mx-auto">
+          <div class="flex justify-between items-center border-b pb-3">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm">Physical Inspection Checklist: ${collegeName}</h3>
+              <p class="text-xs text-slate-500">Statutory on-site verification form for committee members</p>
+            </div>
+            <span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded font-bold text-xs">Scheduled Today</span>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div class="p-3 bg-slate-50 rounded-xl border flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-800">1. Land Area Verification (min 2.5 Acres contiguous)</span>
+                <div class="text-[11px] text-slate-500">Survey boundary markers inspected and validated.</div>
+              </div>
+              <span class="text-emerald-700 font-bold"><i class="fa-solid fa-check"></i> Verified</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-800">2. Fire Safety Hydrants & Sprinklers</span>
+                <div class="text-[11px] text-slate-500">Operational testing conducted on floors 1 through 4.</div>
+              </div>
+              <span class="text-emerald-700 font-bold"><i class="fa-solid fa-check"></i> Verified</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border flex items-center justify-between">
+              <div>
+                <span class="font-bold text-slate-800">3. Computer Lab & High-Speed Internet</span>
+                <div class="text-[11px] text-slate-500">1:4 terminal ratio verified for applied engineering branches.</div>
+              </div>
+              <span class="text-emerald-700 font-bold"><i class="fa-solid fa-check"></i> Verified</span>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t flex justify-end">
+            <button onclick="openEvcModal('${collegeName}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs shadow">
+              Proceed to Sign Off Report &rarr;
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Actions
+    function quickApprove(id) {
+      const app = state.applications.find(a => a.id === id);
+      if (app) {
+        app.status = 'APPROVED';
+        app.ocrStatus = 'PASSED';
+        
+        // Add to audit log
+        state.auditLogs.unshift({
+          id: `LOG-${Math.floor(1000 + Math.random()*9000)}`,
+          action: "APPROVAL_GRANTED",
+          actor: ROLES[state.role].name,
+          entity: app.id,
+          prevHash: state.auditLogs[0]?.hash || "GENESIS",
+          hash: Math.random().toString(36).substring(2, 10) + "...",
+          time: "Just now"
+        });
+
+        showToast(`Application for ${app.college} APPROVED! EOA letter issued.`, "success");
+        renderPage();
+      }
+    }
+
+    function openInspectModal(id) {
+      const app = state.applications.find(a => a.id === id) || state.applications[0];
+      state.selectedAppId = app.id;
+
+      document.getElementById('insModalTitle').innerText = `AI OCR Inspection: ${app.college}`;
+      document.getElementById('insModalSubtitle').innerText = `${app.id} &bull; Extraction Confidence: ${app.confidence}`;
+      document.getElementById('insDocType').innerText = app.docType;
+      document.getElementById('insConfidence').innerText = `${app.confidence} (Analyzed)`;
+      document.getElementById('insRawText').innerText = app.rawText;
+
+      const noticeBox = document.getElementById('insNoticeBox');
+      const noticeHead = document.getElementById('insNoticeHead');
+      const noticeBody = document.getElementById('insNoticeBody');
+
+      if (app.ocrStatus === 'FLAGGED') {
+        noticeBox.className = "p-3.5 rounded-xl border bg-rose-50 border-rose-200 text-rose-900";
+        noticeHead.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Critical Regulatory Deficiency Flagged';
+        noticeBody.innerText = app.deficiencyReason;
+      } else {
+        noticeBox.className = "p-3.5 rounded-xl border bg-emerald-50 border-emerald-200 text-emerald-900";
+        noticeHead.innerHTML = '<i class="fa-solid fa-circle-check"></i> 100% Norm Compliance Verified';
+        noticeBody.innerText = "All tenure dates, dimensions, and faculty ratios adhere to statutory regulations.";
+      }
+
+      // Actions allowed inside modal according to role
+      const btnArea = document.getElementById('insModalButtons');
+      if (state.role === 'SUPER_ADMIN' || state.role === 'AICTE_OFFICER') {
+        btnArea.innerHTML = `
+          <button onclick="closeModal('inspectModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs">Close</button>
+          <button onclick="quickApprove('${app.id}'); closeModal('inspectModal');" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow-sm">Approve Application</button>
+        `;
+      } else {
+        btnArea.innerHTML = `
+          <button onclick="closeModal('inspectModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs">Close</button>
+        `;
+      }
+
+      openModal('inspectModal');
+    }
+
+    function openEoaModal(college, id) {
+      document.getElementById('eoaCollegeName').innerText = college;
+      document.getElementById('eoaLetterNo').innerText = `AICTE/AB/2026/EOA/${id.replace('APP-2026-', '')}`;
+      openModal('eoaModal');
+    }
+
+    function openEvcModal(college) {
+      document.getElementById('evcCollegeName').value = college;
+      openModal('evcModal');
+    }
+
+    function submitEvcReport(e) {
+      e.preventDefault();
+      closeModal('evcModal');
+      const app = state.applications.find(a => a.college === "Mumbai Institute of Technology");
+      if (app) {
+        app.status = 'APPROVED';
+        showToast("EVC Physical Inspection Report signed & submitted! Approved for EOA.", "success");
+        renderPage();
+      }
+    }
+
+    function simulateCollegeUpload() {
+      const fb = document.getElementById('uploadFeedback');
+      fb.classList.remove('hidden');
+      const app = state.applications.find(a => a.college === "Delhi Technical Institute");
+      if (app) {
+        app.status = "SCRUTINY";
+        app.ocrStatus = "PASSED";
+        app.deficiencyReason = "Rectified Fire NOC uploaded. Awaiting officer clearance.";
+      }
+      showToast("Document uploaded! PyMuPDF OCR evaluated validity: 100% Passed.", "success");
+    }
+
+    function simulateOCR(type) {
+      const out = document.getElementById('ocrOutputBox');
+      out.innerHTML = '<span class="text-indigo-400">// Running OCR text extraction...</span>';
+      setTimeout(() => {
+        if (type === 'FIRE_NOC') {
+          out.innerHTML = `
+<span class="text-emerald-400">// SUCCESS: Tesseract OCR Stream (Confidence 99.4%)</span>
+STATE FIRE DISASTER AUTHORITY
+Certificate ID: NOC-2026-FIRE-9912
+Valid Until: 12-Nov-2027
+Verdict: UNCONDITIONAL_VALID_PASS`;
+        } else if (type === 'LAND_LEASE') {
+          out.innerHTML = `
+<span class="text-emerald-400">// SUCCESS: Land Deed Lease Tenure Analysis</span>
+Registration No: SUB-REG-2024-884
+Lease Duration: 35 Years (Statutory norm >= 30y)
+Verdict: COMPLIANT_TENURE_CLEARED`;
+        } else if (type === 'CADRE') {
+          out.innerHTML = `
+<span class="text-emerald-400">// SUCCESS: Faculty Payroll Cadre Extractor</span>
+Total Enrolled: 1,200 Students
+Required Cadre: 80 (1:15 Ratio)
+Extracted Payroll Count: 84
+Verdict: CADRE_SATISFIED`;
+        }
+      }, 500);
+    }
+
+    function verifyChainIntegrity() {
+      showToast("Audit chain verified! All 4 SHA-256 blocks mathematically valid.", "success");
+    }
+
+    function exportCSV() {
+      let csv = "ID,College,Region,Type,Status,OCR Status\n";
+      state.applications.forEach(a => {
+        csv += `"${a.id}","${a.college}","${a.region}","${a.type}","${a.status}","${a.ocrStatus}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ApprovalTrack_AICTE_Export_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      showToast("AICTE data exported to CSV!", "success");
+    }
+
+    function showUploadHelp() {
+      setTab('upload_docs');
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    // Init
+    changeRole('SUPER_ADMIN');
+  </script>
+</body>
+</html>
