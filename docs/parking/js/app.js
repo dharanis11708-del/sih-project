@@ -39,7 +39,7 @@ const App = {
       toggleBtn.title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
     }
 
-    if (window.ParkingCharts) {
+    if (typeof ParkingCharts !== 'undefined') {
       ParkingCharts.refreshAll();
     }
   },
@@ -304,10 +304,12 @@ const App = {
       }
     }
 
-    // Render Area Chart
-    if (window.ParkingCharts) {
-      ParkingCharts.renderDashboardAreaChart();
-    }
+    // Render Area Chart after section reflow
+    setTimeout(() => {
+      if (typeof ParkingCharts !== 'undefined') {
+        ParkingCharts.renderDashboardAreaChart();
+      }
+    }, 50);
   },
 
   // --------------------------------------------------------------------------
@@ -823,12 +825,14 @@ const App = {
   // Page 8: Analytics
   // --------------------------------------------------------------------------
   renderAnalyticsPage() {
-    if (window.ParkingCharts) {
-      ParkingCharts.renderVehicleCategoryChart();
-      ParkingCharts.renderPeakHoursChart();
-      ParkingCharts.renderDailyRevenueChart();
-      ParkingCharts.renderHeatmap();
-    }
+    setTimeout(() => {
+      if (typeof ParkingCharts !== 'undefined') {
+        ParkingCharts.renderVehicleCategoryChart();
+        ParkingCharts.renderPeakHoursChart();
+        ParkingCharts.renderDailyRevenueChart();
+        ParkingCharts.renderHeatmap();
+      }
+    }, 50);
   },
 
   // --------------------------------------------------------------------------
@@ -886,6 +890,9 @@ const App = {
     return `${diffHours}h ${remMins}m`;
   },
 };
+
+// Explicitly bind to global window
+window.App = App;
 
 // Run on window load
 window.addEventListener('DOMContentLoaded', () => {
