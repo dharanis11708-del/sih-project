@@ -847,3 +847,7 @@ const ParkingAPI = {
 // Auto-initialize on load
 ParkingAPI.init();
 
+// Explicitly bind to global window for browser script scope
+window.ParkingAPI = ParkingAPI;
+
+

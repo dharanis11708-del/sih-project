@@ -18,11 +18,14 @@ const ParkingCharts = {
   // 1. Dashboard Area Occupancy Bar Chart
   renderDashboardAreaChart(canvasId = 'dashboard-area-chart') {
     const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+    if (!canvas || canvas.offsetParent === null) return;
 
     if (this.instances[canvasId]) {
       this.instances[canvasId].destroy();
+      delete this.instances[canvasId];
     }
+    canvas.removeAttribute('width');
+    canvas.removeAttribute('height');
 
     const { textColor, gridColor } = this.getThemeColors();
     const analytics = ParkingAPI.getAnalyticsData();
@@ -83,11 +86,14 @@ const ParkingCharts = {
   // 2. Analytics: Vehicle Categories Doughnut Chart
   renderVehicleCategoryChart(canvasId = 'analytics-vehicle-chart') {
     const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+    if (!canvas || canvas.offsetParent === null) return;
 
     if (this.instances[canvasId]) {
       this.instances[canvasId].destroy();
+      delete this.instances[canvasId];
     }
+    canvas.removeAttribute('width');
+    canvas.removeAttribute('height');
 
     const { textColor } = this.getThemeColors();
     const analytics = ParkingAPI.getAnalyticsData();
@@ -124,11 +130,14 @@ const ParkingCharts = {
   // 3. Analytics: Peak Parking Hours Bar Chart (Highlight 9-11 AM & 4-6 PM)
   renderPeakHoursChart(canvasId = 'analytics-peak-chart') {
     const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+    if (!canvas || canvas.offsetParent === null) return;
 
     if (this.instances[canvasId]) {
       this.instances[canvasId].destroy();
+      delete this.instances[canvasId];
     }
+    canvas.removeAttribute('width');
+    canvas.removeAttribute('height');
 
     const { textColor, gridColor } = this.getThemeColors();
     const analytics = ParkingAPI.getAnalyticsData();
@@ -194,11 +203,14 @@ const ParkingCharts = {
   // 4. Analytics: Daily Revenue Line Chart (30 Days)
   renderDailyRevenueChart(canvasId = 'analytics-revenue-chart') {
     const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+    if (!canvas || canvas.offsetParent === null) return;
 
     if (this.instances[canvasId]) {
       this.instances[canvasId].destroy();
+      delete this.instances[canvasId];
     }
+    canvas.removeAttribute('width');
+    canvas.removeAttribute('height');
 
     const { textColor, gridColor } = this.getThemeColors();
     const analytics = ParkingAPI.getAnalyticsData();
@@ -263,7 +275,7 @@ const ParkingCharts = {
   // 5. Analytics: Hour vs Weekday Heatmap (Custom HTML/CSS renderer)
   renderHeatmap(containerId = 'analytics-heatmap-container') {
     const container = document.getElementById(containerId);
-    if (!container) return;
+    if (!container || container.offsetParent === null) return;
 
     const analytics = ParkingAPI.getAnalyticsData();
     const { days, hoursRange, matrix } = analytics.heatmap;
@@ -312,4 +324,8 @@ const ParkingCharts = {
     this.renderHeatmap();
   },
 };
+
+// Explicitly bind to global window for browser script scope
+window.ParkingCharts = ParkingCharts;
+
 
