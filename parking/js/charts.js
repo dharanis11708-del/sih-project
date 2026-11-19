@@ -18,10 +18,11 @@ const ParkingCharts = {
   // 1. Dashboard Area Occupancy Bar Chart
   renderDashboardAreaChart(canvasId = 'dashboard-area-chart') {
     const canvas = document.getElementById(canvasId);
-    if (!canvas || canvas.offsetParent === null) return;
+    if (!canvas) return;
+    if (typeof Chart === 'undefined') return;
 
     if (this.instances[canvasId]) {
-      this.instances[canvasId].destroy();
+      try { this.instances[canvasId].destroy(); } catch (e) {}
       delete this.instances[canvasId];
     }
     canvas.removeAttribute('width');
@@ -31,7 +32,8 @@ const ParkingCharts = {
     const analytics = ParkingAPI.getAnalyticsData();
     const { labels, occupied, available } = analytics.areaOccupancy;
 
-    this.instances[canvasId] = new Chart(canvas, {
+    try {
+      this.instances[canvasId] = new Chart(canvas, {
       type: 'bar',
       data: {
         labels: labels.map((l) => l.split('(')[0].trim()),
@@ -81,15 +83,19 @@ const ParkingCharts = {
         },
       },
     });
+    } catch (err) {
+      console.error('Error creating DashboardAreaChart:', err);
+    }
   },
 
   // 2. Analytics: Vehicle Categories Doughnut Chart
   renderVehicleCategoryChart(canvasId = 'analytics-vehicle-chart') {
     const canvas = document.getElementById(canvasId);
-    if (!canvas || canvas.offsetParent === null) return;
+    if (!canvas) return;
+    if (typeof Chart === 'undefined') return;
 
     if (this.instances[canvasId]) {
-      this.instances[canvasId].destroy();
+      try { this.instances[canvasId].destroy(); } catch (e) {}
       delete this.instances[canvasId];
     }
     canvas.removeAttribute('width');
@@ -99,7 +105,8 @@ const ParkingCharts = {
     const analytics = ParkingAPI.getAnalyticsData();
     const { labels, data } = analytics.vehicleCategories;
 
-    this.instances[canvasId] = new Chart(canvas, {
+    try {
+      this.instances[canvasId] = new Chart(canvas, {
       type: 'doughnut',
       data: {
         labels: labels,
@@ -125,15 +132,19 @@ const ParkingCharts = {
         cutout: '65%',
       },
     });
+    } catch (err) {
+      console.error('Error creating VehicleCategoryChart:', err);
+    }
   },
 
   // 3. Analytics: Peak Parking Hours Bar Chart (Highlight 9-11 AM & 4-6 PM)
   renderPeakHoursChart(canvasId = 'analytics-peak-chart') {
     const canvas = document.getElementById(canvasId);
-    if (!canvas || canvas.offsetParent === null) return;
+    if (!canvas) return;
+    if (typeof Chart === 'undefined') return;
 
     if (this.instances[canvasId]) {
-      this.instances[canvasId].destroy();
+      try { this.instances[canvasId].destroy(); } catch (e) {}
       delete this.instances[canvasId];
     }
     canvas.removeAttribute('width');
@@ -151,7 +162,8 @@ const ParkingCharts = {
       return '#3b82f6'; // Blue standard
     });
 
-    this.instances[canvasId] = new Chart(canvas, {
+    try {
+      this.instances[canvasId] = new Chart(canvas, {
       type: 'bar',
       data: {
         labels: labels,
@@ -198,15 +210,19 @@ const ParkingCharts = {
         },
       },
     });
+    } catch (err) {
+      console.error('Error creating PeakHoursChart:', err);
+    }
   },
 
   // 4. Analytics: Daily Revenue Line Chart (30 Days)
   renderDailyRevenueChart(canvasId = 'analytics-revenue-chart') {
     const canvas = document.getElementById(canvasId);
-    if (!canvas || canvas.offsetParent === null) return;
+    if (!canvas) return;
+    if (typeof Chart === 'undefined') return;
 
     if (this.instances[canvasId]) {
-      this.instances[canvasId].destroy();
+      try { this.instances[canvasId].destroy(); } catch (e) {}
       delete this.instances[canvasId];
     }
     canvas.removeAttribute('width');
@@ -216,7 +232,8 @@ const ParkingCharts = {
     const analytics = ParkingAPI.getAnalyticsData();
     const { labels, data } = analytics.dailyRevenue;
 
-    this.instances[canvasId] = new Chart(canvas, {
+    try {
+      this.instances[canvasId] = new Chart(canvas, {
       type: 'line',
       data: {
         labels: labels,
@@ -270,49 +287,63 @@ const ParkingCharts = {
         },
       },
     });
+    } catch (err) {
+      console.error('Error creating DailyRevenueChart:', err);
+    }
   },
 
   // 5. Analytics: Hour vs Weekday Heatmap (Custom HTML/CSS renderer)
   renderHeatmap(containerId = 'analytics-heatmap-container') {
     const container = document.getElementById(containerId);
-    if (!container || container.offsetParent === null) return;
+    if (!container) return;
 
-    const analytics = ParkingAPI.getAnalyticsData();
-    const { days, hoursRange, matrix } = analytics.heatmap;
+    try {
+      const analytics = ParkingAPI.getAnalyticsData();
+      const { days, hoursRange, matrix } = analytics.heatmap;
 
-    // Find maximum count to scale intensity classes (heat-0 to heat-6)
-    let maxCount = 1;
-    matrix.forEach((row) => {
-      row.hours.forEach((val) => {
-        if (val > maxCount) maxCount = val;
+      let maxCount = 1;
+      matrix.forEach((row) => {
+        row.hours.forEach((val) => {
+          if (val > maxCount) maxCount = val;
+        });
       });
-    });
 
-    let html = `<div class="heatmap-container"><div class="heatmap-grid">`;
+      let html = `<div class="heatmap-container"><div class="heatmap-grid">`;
 
-    // 1. Header row with hours
-    html += `<div class="heatmap-header-cell">Day</div>`;
-    hoursRange.forEach((hour) => {
-      html += `<div class="heatmap-header-cell">${hour}</div>`;
-    });
-
-    // 2. Rows for each Day
-    matrix.forEach((row) => {
-      html += `<div class="heatmap-day-label">${row.dayName}</div>`;
-      row.hours.forEach((count, hIdx) => {
-        // Calculate heat level from 0 to 6
-        const heatLevel = count === 0 ? 0 : Math.min(6, Math.max(1, Math.ceil((count / maxCount) * 6)));
-        const hourLabel = hoursRange[hIdx];
-        html += `
-          <div class="heatmap-cell heat-${heatLevel}" title="${row.dayName} at ${hourLabel}: ${count} vehicles">
-            ${count > 0 ? count : ''}
-          </div>
-        `;
+      html += `<div class="heatmap-header-cell">Day</div>`;
+      hoursRange.forEach((hour) => {
+        html += `<div class="heatmap-header-cell">${hour}</div>`;
       });
-    });
 
-    html += `</div></div>`;
-    container.innerHTML = html;
+      matrix.forEach((row) => {
+        html += `<div class="heatmap-day-label">${row.dayName}</div>`;
+        row.hours.forEach((count, hIdx) => {
+          const heatLevel = count === 0 ? 0 : Math.min(6, Math.max(1, Math.ceil((count / maxCount) * 6)));
+          const hourLabel = hoursRange[hIdx];
+          html += `
+            <div class="heatmap-cell heat-${heatLevel}" title="${row.dayName} at ${hourLabel}: ${count} vehicles">
+              ${count > 0 ? count : ''}
+            </div>
+          `;
+        });
+      });
+
+      html += `</div></div>`;
+      container.innerHTML = html;
+    } catch (err) {
+      console.error('Error rendering Heatmap:', err);
+    }
+  },
+
+  // Resize all active charts (forces Chart.js to recalculate canvas size after tab transition)
+  resizeAll() {
+    Object.values(this.instances).forEach((inst) => {
+      if (inst && typeof inst.resize === 'function') {
+        try {
+          inst.resize();
+        } catch (e) {}
+      }
+    });
   },
 
   // Refresh all charts when theme changes or data updates
@@ -322,6 +353,7 @@ const ParkingCharts = {
     this.renderPeakHoursChart();
     this.renderDailyRevenueChart();
     this.renderHeatmap();
+    this.resizeAll();
   },
 };
 

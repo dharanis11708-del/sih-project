@@ -831,8 +831,14 @@ const App = {
         ParkingCharts.renderPeakHoursChart();
         ParkingCharts.renderDailyRevenueChart();
         ParkingCharts.renderHeatmap();
+        ParkingCharts.resizeAll();
       }
     }, 50);
+    setTimeout(() => {
+      if (typeof ParkingCharts !== 'undefined') {
+        ParkingCharts.resizeAll();
+      }
+    }, 200);
   },
 
   // --------------------------------------------------------------------------
