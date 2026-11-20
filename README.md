@@ -108,3 +108,113 @@ This project is released under the **MIT License** – see the `LICENSE` file in
 ---
 
 *Created for the Smart India Hackathon 2026 (SIH) – Team **Tech Spark**.*
+
+
+## ER Diagram
+
+```mermaid
+erDiagram
+    AREAS {
+        VARCHAR id PK "Primary key"
+        VARCHAR name
+        VARCHAR location
+        INTEGER capacity
+        TIMESTAMP created_at
+    }
+    SLOTS {
+        VARCHAR id PK
+        VARCHAR slot_number "Unique"
+        VARCHAR area_id FK "References AREAS.id"
+        VARCHAR slot_type "Car | Bike | Truck"
+        BOOLEAN is_occupied
+        VARCHAR current_vehicle_no
+    }
+    PARKED_VEHICLES {
+        VARCHAR ticket_id PK
+        VARCHAR vehicle_no "Unique"
+        VARCHAR vehicle_type "Car | Bike | Truck"
+        VARCHAR owner_name
+        VARCHAR contact_number
+        VARCHAR area_id FK "References AREAS.id"
+        VARCHAR area_name
+        VARCHAR slot_number
+        TIMESTAMP entry_time
+        NUMERIC rate_per_hour
+    }
+    PARKING_HISTORY {
+        VARCHAR ticket_id PK
+        VARCHAR vehicle_no
+        VARCHAR vehicle_type "Car | Bike | Truck"
+        VARCHAR owner_name
+        VARCHAR contact_number
+        VARCHAR area_id FK "References AREAS.id"
+        VARCHAR area_name
+        VARCHAR slot_number
+        TIMESTAMP entry_time
+        TIMESTAMP exit_time
+        NUMERIC duration_hours
+        INTEGER billed_hours
+        NUMERIC rate_per_hour
+        NUMERIC total_fee
+        VARCHAR payment_method
+        VARCHAR status
+    }
+    AREAS ||--o{ SLOTS : "has many"
+    AREAS ||--o{ PARKED_VEHICLES : "has many"
+    AREAS ||--o{ PARKING_HISTORY : "has many"
+```
+
+
+## ER Diagram
+
+```mermaid
+erDiagram
+    AREAS {
+        VARCHAR id PK "Primary key"
+        VARCHAR name
+        VARCHAR location
+        INTEGER capacity
+        TIMESTAMP created_at
+    }
+    SLOTS {
+        VARCHAR id PK
+        VARCHAR slot_number "Unique"
+        VARCHAR area_id FK "References AREAS.id"
+        VARCHAR slot_type "Car | Bike | Truck"
+        BOOLEAN is_occupied
+        VARCHAR current_vehicle_no
+    }
+    PARKED_VEHICLES {
+        VARCHAR ticket_id PK
+        VARCHAR vehicle_no "Unique"
+        VARCHAR vehicle_type "Car | Bike | Truck"
+        VARCHAR owner_name
+        VARCHAR contact_number
+        VARCHAR area_id FK "References AREAS.id"
+        VARCHAR area_name
+        VARCHAR slot_number
+        TIMESTAMP entry_time
+        NUMERIC rate_per_hour
+    }
+    PARKING_HISTORY {
+        VARCHAR ticket_id PK
+        VARCHAR vehicle_no
+        VARCHAR vehicle_type "Car | Bike | Truck"
+        VARCHAR owner_name
+        VARCHAR contact_number
+        VARCHAR area_id FK "References AREAS.id"
+        VARCHAR area_name
+        VARCHAR slot_number
+        TIMESTAMP entry_time
+        TIMESTAMP exit_time
+        NUMERIC duration_hours
+        INTEGER billed_hours
+        NUMERIC rate_per_hour
+        NUMERIC total_fee
+        VARCHAR payment_method
+        VARCHAR status
+    }
+    AREAS ||--o{ SLOTS : "has many"
+    AREAS ||--o{ PARKED_VEHICLES : "has many"
+    AREAS ||--o{ PARKING_HISTORY : "has many"
+```
