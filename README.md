@@ -1,8 +1,8 @@
 # Smart Parking Management System
 
-**Live Demo:** https://dharanis11708-del.github.io/sih-project/parking/
-
-**GitHub Repository:** https://github.com/dharanis11708-del/sih-project
+**Live Demo:** https://dharanis11708-del.github.io/sih-project/parking/  
+**GitHub Repository:** https://github.com/dharanis11708-del/sih-project  
+**Software Engineering Course Documentation (25ITT33):** [SOFTWARE_ENGINEERING_DOCUMENT.md](file:///d:/SIH10/SOFTWARE_ENGINEERING_DOCUMENT.md)
 
 ---
 
